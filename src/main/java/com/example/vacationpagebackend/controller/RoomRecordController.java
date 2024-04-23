@@ -1,5 +1,7 @@
 package com.example.vacationpagebackend.controller;
+
 import com.example.vacationpagebackend.entity.RoomRecord;
+import com.example.vacationpagebackend.entity.RoomRecordWithDaysWritten;
 import com.example.vacationpagebackend.entity.RoomType;
 import com.example.vacationpagebackend.service.RoomRecordService;
 import lombok.RequiredArgsConstructor;
@@ -23,15 +25,12 @@ public class RoomRecordController {
     }
 
     @GetMapping("/{monthNum}/{roomType}")
-    public ResponseEntity<RoomRecord> getRoomRecord(@PathVariable int monthNum, @PathVariable int roomType) {
-        RoomRecord roomRecord;
-        if (monthNum == 0) {
-            RoomType type = getRoomType(roomType);
-            roomRecord = roomRecordService.getByMonthNumAndRoomType(monthNum, type);
-        } else {
-            roomRecord = roomRecordService.getByMonthNum(monthNum);
-        }
-        return ResponseEntity.ok(roomRecord);
+    @CrossOrigin(origins = "*", methods = { RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS })
+    public ResponseEntity<RoomRecordWithDaysWritten> getRoomRecord(@PathVariable int monthNum, @PathVariable int roomType) {
+        System.out.println("get on " + monthNum + " " + roomType);
+        RoomType type = getRoomType(roomType);
+        RoomRecordWithDaysWritten response = roomRecordService.getRoomRecordsForMonthAndType(monthNum,type);
+        return ResponseEntity.ok(response);
     }
 
 
@@ -41,16 +40,13 @@ public class RoomRecordController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdRoomRecord);
     }
 
+    @PostMapping("/reservation")
+    public ResponseEntity sendEmailToAdmin(@RequestBody Mail mail){
+        System.out.println("Sending Reservation Form! \n" + mail.toString());
+        return ResponseEntity.ok().build();
+    }
     @PutMapping("/{id}")
     public ResponseEntity<RoomRecord> updateRoomRecord(@PathVariable Long id, @RequestBody RoomRecord roomRecord) {
-        RoomRecord updatedRoomRecord = roomRecordService.updateRoomRecord(id, roomRecord);
-        return ResponseEntity.ok(updatedRoomRecord);
-    }
-
-    @PutMapping("/{monthNum}/{roomType}")
-    public ResponseEntity<RoomRecord> updateRoomRecord(@PathVariable int monthNum, @PathVariable int roomType, @RequestBody RoomRecord roomRecord) {
-        RoomType type = getRoomType(roomType);
-        Long id = roomRecordService.getByMonthNumAndRoomType(monthNum, type).getId();
         RoomRecord updatedRoomRecord = roomRecordService.updateRoomRecord(id, roomRecord);
         return ResponseEntity.ok(updatedRoomRecord);
     }
@@ -60,13 +56,17 @@ public class RoomRecordController {
         roomRecordService.deleteRoomRecord(id);
         return ResponseEntity.noContent().build();
     }
+
     @DeleteMapping("/{monthNum}/{roomType}")
     public ResponseEntity<RoomRecord> deleteRoomRecord(@PathVariable int monthNum, @PathVariable int roomType) {
         RoomType type = getRoomType(roomType);
-        RoomRecord roomRecord = roomRecordService.getByMonthNumAndRoomType(monthNum, type);
-        roomRecordService.deleteRoomRecord(roomRecord.getId());
+        List<RoomRecord> records = roomRecordService.getRoomRecordsAsListByMonthAndType(monthNum,type);
+        for (RoomRecord roomRecord : records){
+            roomRecordService.deleteRoomRecord(roomRecord.getId());
+        }
         return ResponseEntity.noContent().build();
     }
+
     private RoomType getRoomType(int roomType) {
         return switch (roomType) {
             case 2 -> RoomType.TWO_PERSON_ROOM;

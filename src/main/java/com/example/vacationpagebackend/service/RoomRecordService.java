@@ -1,8 +1,6 @@
 package com.example.vacationpagebackend.service;
 
-import com.example.vacationpagebackend.entity.RoomRecord;
-import com.example.vacationpagebackend.entity.RoomRecordEntity;
-import com.example.vacationpagebackend.entity.RoomType;
+import com.example.vacationpagebackend.entity.*;
 import com.example.vacationpagebackend.mappers.RoomRecordMapper;
 import com.example.vacationpagebackend.repository.RoomRecordRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,10 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.time.Year;
+import java.time.YearMonth;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.example.vacationpagebackend.service.ContextExceptionFactory.roomRecordNotFound;
@@ -27,23 +24,43 @@ public class RoomRecordService {
     private final RoomRecordRepository roomRecordRepository;
     private final RoomRecordMapper roomRecordMapper;
 
-    public RoomRecord getByRoomType(RoomType roomType) {
-        return (roomRecordRepository.findRoomRecordByRoomType(roomType)
-                .map(roomRecordMapper::mapRoomRecordEntityToRoomRecord)
-                .orElseThrow());
+    public RoomRecordWithDaysWritten getRoomRecordsForMonthAndType(int monthNum, RoomType roomType) {
+        Optional<List<RoomRecordEntity>> roomRecordEntitiesOptional = roomRecordRepository.findRoomRecordEntitiesByMonthNumAndRoomType(monthNum, roomType);
+
+        if (roomRecordEntitiesOptional.isPresent()) {
+            List<RoomRecordEntity> roomRecordEntities = roomRecordEntitiesOptional.get();
+            List<Day> reservedDaysList = new ArrayList<>();
+            Set<Integer> reservedNum = new HashSet<>();
+            for (RoomRecordEntity roomRecordEntity : roomRecordEntities) {
+                RoomRecord roomRecord = roomRecordMapper.mapRoomRecordEntityToRoomRecord(roomRecordEntity);
+                reservedNum.addAll(roomRecord.getReservedDays());
+            }
+
+            YearMonth yearMonth = YearMonth.of(Year.now().getValue(), monthNum);
+            int lengthOfMonth = yearMonth.lengthOfMonth();
+
+            for (int i = 1; i <= lengthOfMonth; i++) {
+                if (!reservedNum.contains(i)){
+                    reservedDaysList.add(new Day(i, false));
+                }else {
+                    reservedDaysList.add(new Day(i, true));
+                }
+            }
+            return new RoomRecordWithDaysWritten(reservedDaysList, roomType, monthNum);
+        } else {
+            throw roomRecordNotFound(monthNum);
+        }
     }
 
-    public RoomRecord getByMonthNum(int monthNum) {
-        return (roomRecordRepository.findRoomRecordByMonthNum(monthNum)
-                .map(roomRecordMapper::mapRoomRecordEntityToRoomRecord)
-                .orElseThrow(() -> roomRecordNotFound(monthNum)));
-    }
-
-    public RoomRecord getByMonthNumAndRoomType(int monthNum, RoomType roomType){
-        return roomRecordRepository.findRoomRecordEntityByMonthNumAndRoomType(monthNum, roomType)
-                .map(roomRecordMapper::mapRoomRecordEntityToRoomRecord)
+    public List<RoomRecord> getRoomRecordsAsListByMonthAndType(int monthNum, RoomType roomType) {
+        List<RoomRecordEntity> roomRecordEntities = roomRecordRepository.findRoomRecordEntitiesByMonthNumAndRoomType(monthNum, roomType)
                 .orElseThrow(() -> roomRecordNotFound(monthNum));
+
+        return roomRecordEntities.stream()
+                .map(roomRecordMapper::mapRoomRecordEntityToRoomRecord)
+                .collect(Collectors.toList());
     }
+
     public RoomRecord createRoomRecord(RoomRecord roomRecord) {
         return roomRecordMapper.mapRoomRecordEntityToRoomRecord(roomRecordRepository.save(
                 roomRecordMapper.mapRoomRecordToRoomRecordEntity(
