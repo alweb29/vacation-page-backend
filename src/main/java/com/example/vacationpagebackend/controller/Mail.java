@@ -8,17 +8,17 @@ public class Mail {
     private String nameAndLastName;
     private String email;
     private String phoneNo;
-    private RoomType roomType;
+    private int roomType;
     private String message;
 
     @Override
     public String toString() {
-        return "Mail{" +
-                "nameAndLastName='" + nameAndLastName + '\'' +
-                ", email='" + email + '\'' +
-                ", phoneNo='" + phoneNo + '\'' +
-                ", roomType=" + roomType +
-                ", message='" + message + '\'' +
-                '}';
+        return
+                "Imie i nazwisko: " + nameAndLastName + '\n' +
+                "email: '" + email + '\n' +
+                "numer telefonu:" + phoneNo + '\n' +
+                "rodzaj pokoju: " + roomType + '\n' +
+                "wiadomość: \n" + message +"\n\n" +
+                "Ja, " +nameAndLastName +" wyrażam zgodę na przetwarzanie moich danych na potrzeby kontaktu";
     }
 }

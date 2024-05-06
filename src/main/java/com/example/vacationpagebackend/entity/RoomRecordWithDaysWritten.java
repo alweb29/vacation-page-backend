@@ -9,7 +9,6 @@ import java.util.List;
 
 @Getter
 @Setter
-
 @Accessors(chain = true)
 public class RoomRecordWithDaysWritten extends RoomRecord {
     private List<Day> reservedDaysFull;
